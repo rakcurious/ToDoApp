@@ -88,6 +88,7 @@ function App() {
             {isEditing && editingTodo.id === todo.id ? (
               <input
                 type="text"
+                autoFocus={true}
                 value={editingTodo.todo}
                 onKeyUp={(e) => (e.key === "Enter" ? updateTodo(editingTodo) : null)}
                 onChange={(e) =>
