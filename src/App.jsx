@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import deleteicon from "./assets/deleteicon.png";
 import editicon from "./assets/editicon.png";
 import saveicon from "./assets/saveicon.png";
@@ -8,7 +8,7 @@ function App() {
   const [todos, setTodos] = useState([]);
   const [editingTodo, setEditingTodo] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
+  const editInputRef = useRef(null);
 
   const addTodo = (newTodo) => {
     setTodos((prev) => [{ id: Date.now(), ...newTodo }, ...prev]);
@@ -19,6 +19,7 @@ function App() {
       prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
     );
     setIsEditing(false);
+    setEditingTodo(null);
   };
 
   const deleteTodo = (id) => {
@@ -39,6 +40,19 @@ function App() {
     setTodo("");
   };
 
+  const handleEdit = (todo) => {
+    setEditingTodo(todo);
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    if (editingTodo && editingTodo.todo.trim().length > 0) {
+      updateTodo(editingTodo);
+    }
+    setIsEditing(false);
+    editInputRef.current.blur();
+  };
+
   useEffect(() => {
     const todos = JSON.parse(localStorage.getItem("todos"));
     if (todos && todos.length > 0) {
@@ -49,6 +63,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos]);
+
+  useEffect(() => {
+    if (isEditing) {
+      editInputRef.current.focus();
+    }
+  }, [isEditing]);
 
   const allChecked = todos.every((todo) => todo.completed);
 
@@ -81,46 +101,58 @@ function App() {
             <input
               type="checkbox"
               onChange={() => toggle(todo.id)}
-              className={`h-6 w-6 rounded-xl m-4 mx-4  cursor-pointer transition ${allChecked? "duration-300 ease-in-out scale-110 hover:rotate-12 -rotate-12 accent-green-700" : " accent-purple-500"}`}
+              className={`h-6 w-6 rounded-xl m-4 mx-4  cursor-pointer transition ${
+                allChecked
+                  ? "duration-300 ease-in-out scale-110 hover:rotate-12 -rotate-12 accent-green-700"
+                  : " accent-purple-500"
+              }`}
               checked={todo.completed}
             />
 
             {isEditing && editingTodo.id === todo.id ? (
               <input
                 type="text"
-                autoFocus={true}
+                ref={editInputRef}
+                autoFocus
                 value={editingTodo.todo}
-                onKeyUp={(e) => (e.key === "Enter" ? updateTodo(editingTodo) : null)}
+                onKeyUp={(e) => (e.key === "Enter" ? handleSave() : null)}
                 onChange={(e) =>
                   setEditingTodo({ ...editingTodo, todo: e.target.value })
                 }
-                className={todo.completed ? "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words line-through" : "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words"}
+                className={
+                  todo.completed
+                    ? "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words line-through"
+                    : "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words"
+                }
               />
             ) : (
-              <input value={todo.todo} readOnly={true} className={todo.completed ? "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words line-through" : "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words"} />
+              <input
+                value={todo.todo}
+                readOnly={true}
+                className={
+                  todo.completed
+                    ? "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words line-through"
+                    : "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words"
+                }
+              />
             )}
 
             {isEditing && editingTodo.id === todo.id ? (
               <img
-                onClick={() => updateTodo(editingTodo)}
+                onClick={handleSave}
                 src={saveicon}
                 alt="save"
                 className="h-10 w-10 round mx-2 saturate-200 transition hover:-translate-y-0 translate-y-2 duration-500 ease-in-out hover:scale-105  delay-75 cursor-pointer"
               />
             ) : (
-              (
-                <img
-                  onClick={() =>
-                    !todo.completed &&
-                    (setEditingTodo(todo) || setIsEditing(true))
-                  }
-                  src={editicon}
-                  alt="edit"
-                  className={`h-10 w-10 round mx-2 saturate-200 transition hover:-translate-y-1.5 lg:hover:-translate-y-0 translate-y-2 duration-500 ease-in-out hover:scale-110 delay-75 cursor-pointer ${
-                    todo.completed ? "opacity-50 cursor-default" : ""
-                  }`}
-                />
-              )
+              <img
+                onClick={() => !todo.completed && handleEdit(todo)}
+                src={editicon}
+                alt="edit"
+                className={`h-10 w-10 round mx-2 saturate-200 transition hover:-translate-y-1.5 lg:hover:-translate-y-0 translate-y-2 duration-500 ease-in-out hover:scale-110 delay-75 cursor-pointer ${
+                  todo.completed ? "opacity-50 cursor-default" : ""
+                }`}
+              />
             )}
 
             <img
