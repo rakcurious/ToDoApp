@@ -2,41 +2,28 @@ import { useState, useEffect, useRef } from "react";
 import deleteicon from "./assets/deleteicon.png";
 import editicon from "./assets/editicon.png";
 import saveicon from "./assets/saveicon.png";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  addTodo,
+  deleteTodo,
+  toggle,
+  getLocalTodos,
+  updateTodo,
+} from "./features/todos/todoSlice";
 
 function App() {
   const [todo, setTodo] = useState("");
-  const [todos, setTodos] = useState([]);
   const [editingTodo, setEditingTodo] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const editInputRef = useRef(null);
+  const mainInputRef = useRef(null);
+  const dispatch = useDispatch();
 
-  const addTodo = (newTodo) => {
-    setTodos((prev) => [{ id: Date.now(), ...newTodo }, ...prev]);
-  };
-
-  const updateTodo = (updatedTodo) => {
-    setTodos((prev) =>
-      prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
-    );
-    setIsEditing(false);
-    setEditingTodo(null);
-  };
-
-  const deleteTodo = (id) => {
-    setTodos((prev) => prev.filter((todo) => todo.id !== id));
-  };
-
-  const toggle = (id) => {
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
-  };
+  const todos = useSelector((state) => state.todos);
 
   const handleAdd = () => {
     if (!todo || todo.trim().length === 0) return;
-    addTodo({ todo, completed: false });
+    dispatch(addTodo(todo));
     setTodo("");
   };
 
@@ -47,16 +34,18 @@ function App() {
 
   const handleSave = () => {
     if (editingTodo && editingTodo.todo.trim().length > 0) {
-      updateTodo(editingTodo);
+      dispatch(updateTodo(editingTodo));
     }
     setIsEditing(false);
+    setEditingTodo(null);
     editInputRef.current.blur();
+    mainInputRef.current.focus();
   };
 
   useEffect(() => {
     const todos = JSON.parse(localStorage.getItem("todos"));
     if (todos && todos.length > 0) {
-      setTodos(todos);
+      dispatch(getLocalTodos(todos));
     }
   }, []);
 
@@ -81,6 +70,8 @@ function App() {
       <div className="m-10 mx-2 flex justify-center">
         <input
           type="text"
+          ref={mainInputRef}
+          autoFocus
           placeholder="write new task here"
           value={todo}
           onChange={(e) => setTodo(e.target.value)}
@@ -100,7 +91,7 @@ function App() {
           <div key={todo.id} className="my-4 mx-2 flex justify-center">
             <input
               type="checkbox"
-              onChange={() => toggle(todo.id)}
+              onChange={() => dispatch(toggle(todo.id))}
               className={`h-6 w-6 rounded-xl m-4 mx-4  cursor-pointer transition ${
                 allChecked
                   ? "duration-300 ease-in-out scale-110 hover:rotate-12 -rotate-12 accent-green-700"
@@ -131,7 +122,7 @@ function App() {
                 readOnly={true}
                 className={
                   todo.completed
-                    ? "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words line-through"
+                    ? "bg-purple-300/50 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words line-through"
                     : "bg-purple-200 px-4 h-auto py-3 w-2/3 rounded-lg text-center text-xl text-purple-500 font-quicksand break-words"
                 }
               />
@@ -156,7 +147,7 @@ function App() {
             )}
 
             <img
-              onClick={() => deleteTodo(todo.id)}
+              onClick={() => dispatch(deleteTodo(todo.id))}
               src={deleteicon}
               alt="delete"
               className="h-14 w-14 round mx-2 saturate-200 transition hover:-translate-y-1.5 lg:hover:-translate-y-2 duration-500 ease-in-out hover:scale-110 delay-75 cursor-pointer"
